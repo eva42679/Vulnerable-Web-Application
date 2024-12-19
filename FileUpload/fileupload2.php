@@ -19,22 +19,44 @@
 	</div>
 <?php
 
-// Check if image file is a actual image or fake image
-if(isset($_POST["submit"])) {
-	$target_dir = "uploads/";
-	$target_file = $target_dir . basename($_FILES["file"]["name"]);
-	$uploadOk = 1;
-	$imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
-	$type = $_FILES["file"]["type"];
+if (isset($_POST["submit"])) {
+    $target_dir = "uploads/";
+    $file_name = basename($_FILES["file"]["name"]);
+    $target_file = $target_dir . $file_name;
+    $upload_ok = true;
 
-    if($type != "image/png" && $type != "image/jpeg" ){
-        echo "JPG, JPEG, PNG & GIF files are allowed.";
-        $uploadOk = 0;
+ 
+    if (!is_dir($target_dir)) {
+        mkdir($target_dir, 0755, true);
     }
-    
-    if($uploadOk == 1){
-        move_uploaded_file($_FILES["file"]["tmp_name"], $target_file);
-        echo "File uploaded /uploads/".$_FILES["file"]["name"];
+
+    $check = getimagesize($_FILES["file"]["tmp_name"]);
+    if ($check === false) {
+        echo "El archivo no es una imagen.";
+        $upload_ok = false;
+    }
+
+    if ($_FILES["file"]["size"] > 2 * 1024 * 1024) {
+        echo "El archivo es demasiado grande.";
+        $upload_ok = false;
+    }
+
+    $allowed_file_types = ['jpg', 'jpeg', 'png', 'gif'];
+    $file_extension = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+    if (!in_array($file_extension, $allowed_file_types)) {
+        echo "Solo se permiten archivos JPG, JPEG, PNG y GIF.";
+        $upload_ok = false;
+    }
+
+    $safe_file_name = preg_replace("/[^a-zA-Z0-9\.\-_]/", "_", $file_name);
+    $safe_target_file = $target_dir . $safe_file_name;
+
+    if ($upload_ok) {
+        if (move_uploaded_file($_FILES["file"]["tmp_name"], $safe_target_file)) {
+            echo "El archivo ha sido subido a: " . htmlspecialchars($safe_target_file);
+        } else {
+            echo "Hubo un error al subir el archivo.";
+        }
     }
 }
 ?>
